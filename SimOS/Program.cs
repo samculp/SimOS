@@ -1,11 +1,11 @@
 ﻿using SimOS;
-using OperatingSystem = SimOS.OperatingSystem;
+using OperatingSystem = SimOS.SimOS;
 
 class Program
 {
     static void Main(string[] args)
     {
-        Cpu cpu = new();
+        SimCpu cpu = new();
         cpu.BootOS();
         cpu.OS.Run();
     }

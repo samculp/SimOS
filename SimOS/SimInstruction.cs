@@ -9,7 +9,7 @@ namespace SimOS;
 public enum Opcode { NOP, ADD, SUB, LD, SYSCALL, HLT };
 public enum Register { R0, R1, R2, R3, R4, R5, R6, R7, R8 };
 
-public class Instruction
+public class SimInstruction
 {
     public Opcode Opcode { get; }
     public Register? Destination { get; }
@@ -17,7 +17,7 @@ public class Instruction
     public int? Immediate { get; }
     public int? TrapNumber { get; }
 
-    public Instruction(
+    public SimInstruction(
         Opcode opcode, 
         Register? destination = null, 
         Register? source = null, 

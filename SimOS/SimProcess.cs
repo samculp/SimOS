@@ -9,17 +9,17 @@ namespace SimOS;
 
 public enum ProcessState { Initial, Ready, Running, Blocked, Final }
 
-public class Process
+public class SimProcess
 {
     public int PID { get; }
     public ProcessState ProcessState { get; set; }
     public CpuState CpuState { get; }
 
-    public Process? Parent { get; }
-    public List<Process> Children { get; }
-    public List<Instruction> Program { get; }
+    public SimProcess? Parent { get; }
+    public List<SimProcess> Children { get; }
+    public List<SimInstruction> Program { get; }
 
-    public Process(int pid, List<Instruction> program, Process? parent = null)
+    public SimProcess(int pid, List<SimInstruction> program, SimProcess? parent = null)
     {
         PID = pid;
         ProcessState = ProcessState.Initial;
