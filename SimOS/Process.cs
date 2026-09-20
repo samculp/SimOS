@@ -7,30 +7,38 @@ using System.Threading.Tasks;
 
 namespace SimOS;
 
+public enum ProcessState { Initial, Ready, Running, Blocked, Final }
+
 public class Process
 {
-    public enum ProcessState
-    {
-        Initial,
-        Ready,
-        Running,
-        Blocked,
-        Final
-    }
-
     public int PID { get; }
-    public ProcessState State { get; set; }
-    public int ProgramCounter { get; set; }
+    public ProcessState ProcessState { get; set; }
+    public CpuState CpuState { get; }
 
     public Process? Parent { get; }
     public List<Process> Children { get; }
+    public List<Instruction> Program { get; }
 
-    public Process(int pid, Process? parent = null)
+    public Process(int pid, List<Instruction> program, Process? parent = null)
     {
         PID = pid;
-        State = ProcessState.Initial;
-        ProgramCounter = 0;
+        ProcessState = ProcessState.Initial;
+
+        CpuState = new();
+
         Parent = parent;
         Children = new();
+        Program = program;
+    }
+}
+
+public class CpuState
+{
+    public int ProgramCounter { get; set; }
+    public int[] Registers { get; }
+    public CpuState()
+    {
+        ProgramCounter = 0;
+        Registers = new int[8];
     }
 }

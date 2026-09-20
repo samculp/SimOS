@@ -1,2 +1,12 @@
-﻿// See https://aka.ms/new-console-template for more information
-Console.WriteLine("Hello, World!");
+﻿using SimOS;
+using OperatingSystem = SimOS.OperatingSystem;
+
+class Program
+{
+    static void Main(string[] args)
+    {
+        Cpu cpu = new();
+        cpu.BootOS();
+        cpu.OS.Run();
+    }
+}
