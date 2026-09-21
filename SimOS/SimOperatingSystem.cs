@@ -9,18 +9,17 @@ namespace SimOS;
 
 public enum TrapEntry { SYSCALL, TIMER_INTERRUPT, PROCESS_EXIT }
 
-public class SimOS
+public class SimOperatingSystem
 {
     public ProcessList ProcessList { get; } = new();
     public SimCpu Cpu { get; }
     public SimScheduler Scheduler { get; } = new();
-    public SimOS(SimCpu cpu)
+    public SimOperatingSystem(SimCpu cpu)
     {
         Cpu = cpu;
         PopulateTrapTable();
     }
-
-    public void Run()
+    public void LoadPrograms()
     {
         List<SimInstruction> program1 = new()
         {
@@ -62,13 +61,15 @@ public class SimOS
         Scheduler.Add(proc2);
         Scheduler.Add(proc3);
 
-        ProcessList.DisplayProcesses();
         Schedule();
-
-        while (Cpu.CurrentProcess != null && Cpu.CurrentProcess.ProcessState != ProcessState.Final)
-            Cpu.Execute();
-
-        ProcessList.DisplayProcesses();
+    }
+    public void Run()
+    {
+        throw new NotImplementedException();
+    }
+    public void Step()
+    {
+        Cpu.Execute();
     }
     public void Schedule()
     {

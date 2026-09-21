@@ -12,7 +12,8 @@ public enum CpuMode { User, Kernel };
 
 public sealed class SimCpu
 {
-    public SimOS OS { get; private set; }
+    #region Properties
+    public SimOperatingSystem OS { get; private set; }
     public CpuMode Mode { get; private set; } = CpuMode.User;
     public SimProcess? CurrentProcess { get; private set; }
     public int[] Registers { get; } = new int[8];
@@ -20,12 +21,14 @@ public sealed class SimCpu
     public Dictionary<int, Action> TrapTable { get; } = new();
     private int InstructionsSincetimer { get; set; }
     private const int TIMER_QUANTUM = 2;
+    #endregion
 
-    public void BootOS()
+    public SimCpu()
     {
         OS = new(this);
     }
 
+    #region Methods
     public void LoadProcess(SimProcess process)
     {
         if (process.ProcessState != ProcessState.Running)
@@ -171,4 +174,5 @@ public sealed class SimCpu
         Console.WriteLine($"R6: {Registers[6]}");
         Console.WriteLine($"R7: {Registers[7]}");
     }
+    #endregion
 }
