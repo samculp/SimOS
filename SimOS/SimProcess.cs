@@ -35,7 +35,7 @@ public class SimProcess
 public class CpuState
 {
     public int ProgramCounter { get; set; }
-    public int[] Registers { get; }
+    public int[] Registers { get; set; }
     public CpuState()
     {
         ProgramCounter = 0;

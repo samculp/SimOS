@@ -24,6 +24,10 @@ public class ProcessList
     {
         return processes.FirstOrDefault(p => p.PID == pid);
     }
+    public void Clear()
+    {
+        processes.Clear();
+    }
     public void DisplayProcesses()
     {
         Console.WriteLine();

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
@@ -16,10 +17,11 @@ public sealed class SimCpu
     public SimOperatingSystem OS { get; private set; }
     public CpuMode Mode { get; private set; } = CpuMode.User;
     public SimProcess? CurrentProcess { get; private set; }
+    private CpuState TrapState { get; set; }
     public int[] Registers { get; } = new int[8];
     public int ProgramCounter { get; private set; }
     public Dictionary<int, Action> TrapTable { get; } = new();
-    private int InstructionsSincetimer { get; set; }
+    private int InstructionsSinceTimer { get; set; }
     private const int TIMER_QUANTUM = 2;
     #endregion
 
@@ -36,12 +38,17 @@ public sealed class SimCpu
             throw new InvalidOperationException("Process cannot be loaded");
         }
 
-        Console.WriteLine($"CPU: Loading process {process.PID}");
-
         CurrentProcess = process;
 
         ProgramCounter = process.CpuState.ProgramCounter;
-        InstructionsSincetimer = 0;
+        InstructionsSinceTimer = 0;
+
+        EventLogger.Instance.SimEvents.Insert(0, new SimEvent
+        {
+            Timestamp = DateTime.Now,
+            EventType = SimEventType.CPU,
+            Message = $"Loading process {process.PID}"
+        });
 
         Array.Copy(
             process.CpuState.Registers,
@@ -54,8 +61,6 @@ public sealed class SimCpu
         {
             throw new InvalidOperationException("No process loaded");
         }
-        
-        Console.WriteLine($"CPU: Saving process {process.PID}");
 
         process.CpuState.ProgramCounter = ProgramCounter;
         Array.Copy(
@@ -63,7 +68,36 @@ public sealed class SimCpu
             process.CpuState.Registers,
             Registers.Length);
     }
-    public void Execute()
+    private CpuState SaveCpuState()
+    {
+        EventLogger.Instance.SimEvents.Insert(0, new SimEvent
+        {
+            Timestamp = DateTime.Now,
+            EventType = SimEventType.CPU,
+            Message = "Saving CPU state"
+        });
+        return new CpuState
+        {
+            ProgramCounter = ProgramCounter,
+            Registers = (int[])Registers.Clone()
+        };
+    }
+    private void RestoreCpuState()
+    {
+        EventLogger.Instance.SimEvents.Insert(0, new SimEvent
+        {
+            Timestamp = DateTime.Now,
+            EventType = SimEventType.CPU,
+            Message = "Restoring CPU state"
+        });
+
+        ProgramCounter = TrapState.ProgramCounter;
+        Array.Copy(
+            TrapState.Registers,
+            Registers,
+            Registers.Length);
+    }
+    public void ExecuteCurrentProcess()
     {
         if (CurrentProcess == null)
         {
@@ -111,28 +145,38 @@ public sealed class SimCpu
                 return;
         }
 
+        EventLogger.Instance.SimEvents.Insert(0, new SimEvent
+        {
+            Timestamp = DateTime.Now,
+            EventType = SimEventType.CPU,
+            Message = $"Executing instruction {instruction}"
+        });
+
         ProgramCounter++;
         TickTimer();
     }
     private void TickTimer()
     {
-        InstructionsSincetimer++;
+        InstructionsSinceTimer++;
 
-        if (InstructionsSincetimer >= TIMER_QUANTUM)
+        if (InstructionsSinceTimer >= TIMER_QUANTUM)
         {
-            InstructionsSincetimer = 0;
+            InstructionsSinceTimer = 0;
             HandleTrap((int)TrapEntry.TIMER_INTERRUPT);
         }
     }
     public void HandleTrap(int trapNumber)
     {
+        EventLogger.Instance.SimEvents.Insert(0, new SimEvent
+        {
+            Timestamp = DateTime.Now,
+            EventType = SimEventType.TRAP,
+            Message = $"PID {CurrentProcess!.PID} -> TRAP {trapNumber}"
+        });
+
         EnterKernelMode();
 
-        Console.WriteLine(
-            $"TRAP {trapNumber}: PID {CurrentProcess!.PID} " +
-            $"- entering kernel mode");
-
-        SaveProcessState(CurrentProcess!);
+        TrapState = SaveCpuState();
 
         // simulates the CPU going to the trap table, grabbing the address specified by the OS, and navigating to that address
         if (!TrapTable.TryGetValue(trapNumber, out var handler))
@@ -142,26 +186,51 @@ public sealed class SimCpu
         
         handler();
     }
-    public void ContextSwitch(SimProcess newProcess)
+    public void ReturnFromTrap(bool restoreCpu = true)
     {
-        // dont need to save current since context switches always arise from traps
-        //if (CurrentProcess != null)
-        //{
-        //    SaveProcessState(CurrentProcess);
-        //}
-        LoadProcess(newProcess);
-    }
-    public void ReturnFromTrap()
-    {
+        if (restoreCpu)
+        {
+            RestoreCpuState();
+        }
+        
         ReturnToUserMode();
+    }
+    public void ResetCpuState()
+    {
+        CurrentProcess = null;
+        for (int i = 0; i < Registers.Length; i++)
+        {
+            Registers[i] = 0;
+        }
+        ProgramCounter = 0;
+        InstructionsSinceTimer = 0;
+
+        EventLogger.Instance.SimEvents.Insert(0, new SimEvent
+        {
+            Timestamp = DateTime.Now,
+            EventType = SimEventType.CPU,
+            Message = "Resetting CPU state"
+        });
     }
     public void EnterKernelMode()
     {
         Mode = CpuMode.Kernel;
+        EventLogger.Instance.SimEvents.Insert(0, new SimEvent
+        {
+            Timestamp = DateTime.Now,
+            EventType = SimEventType.CPU,
+            Message = "Entering kernel mode"
+        });
     }
     public void ReturnToUserMode()
     {
         Mode = CpuMode.User;
+        EventLogger.Instance.SimEvents.Insert(0, new SimEvent
+        {
+            Timestamp = DateTime.Now,
+            EventType = SimEventType.CPU,
+            Message = "Entering user mode"
+        });
     }
     public void PrintRegisterContents()
     {

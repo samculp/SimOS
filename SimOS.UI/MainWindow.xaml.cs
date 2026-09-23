@@ -27,7 +27,9 @@ public partial class MainWindow : Window
         _cpu = new SimCpu();
         _os = _cpu.OS;
 
-        _os.LoadPrograms();
+        EventLog.ItemsSource = EventLogger.Instance.SimEvents;
+
+        _os.Run();
         RefreshUI();
     }
 
@@ -39,12 +41,8 @@ public partial class MainWindow : Window
 
     private void Run_Click(object sender, RoutedEventArgs e)
     {
-
-    }
-
-    private void Stop_Click(object sender, RoutedEventArgs e)
-    {
-
+        _os.Run();
+        RefreshUI();
     }
 
     private void RefreshUI()
@@ -52,6 +50,7 @@ public partial class MainWindow : Window
         CpuModeText.Text = _cpu.Mode.ToString();
         CurrentPidText.Text = _cpu.CurrentProcess?.PID.ToString() ?? "---";
         ProgramCounterText.Text = _cpu.ProgramCounter.ToString();
+        InstructionText.Text = _cpu.CurrentProcess?.Program[_cpu.ProgramCounter].ToString() ?? "---";
 
         RegisterR0Text.Text = _cpu.Registers[0].ToString();
         RegisterR1Text.Text = _cpu.Registers[1].ToString();
@@ -62,8 +61,7 @@ public partial class MainWindow : Window
         RegisterR6Text.Text = _cpu.Registers[6].ToString();
         RegisterR7Text.Text = _cpu.Registers[7].ToString();
 
-
-        ProcessGrid.ItemsSource = null;
-        ProcessGrid.ItemsSource = _os.ProcessList.Processes;
+        ProcessGrid.ItemsSource = _os.ProcessList.Processes.ToArray();
+        ReadyQueueList.ItemsSource = _os.Scheduler.ReadyQueue.ToArray();
     }
 }
